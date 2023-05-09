@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -7,73 +7,16 @@ using System.IO;
 using System.Text;
 using System.Security.Cryptography.X509Certificates;
 
+
+
 namespace CNGKey
 {
     internal class Program
     {
         private const CngKeyCreationOptions NCryptUseVirtualIsolationFlag = (CngKeyCreationOptions)0x00020000;
 
-        // Declare the NCryptOpenStorageProvider function from the Windows API
-        [DllImport("ncrypt.dll")]
-        private static extern int NCryptOpenStorageProvider(out IntPtr phProvider, string pszProviderName, int dwFlags);
-
-        // Declare the NCryptOpenKey function from the Windows API
-        [DllImport("ncrypt.dll")]
-        private static extern int NCryptOpenKey(IntPtr hProvider, out IntPtr phKey, string pszKeyName, int dwLegacyKeySpec, int dwFlags);
-
-        // Declare the NCryptFreeObject function from the Windows API
-        [DllImport("ncrypt.dll")]
-        private static extern int NCryptFreeObject(IntPtr hObject);
-
-        public enum SE_OBJECT_TYPE
-        {
-            SE_UNKNOWN_OBJECT_TYPE = 0,
-            SE_FILE_OBJECT,
-            SE_SERVICE,
-            SE_PRINTER,
-            SE_REGISTRY_KEY,
-            SE_LMSHARE,
-            SE_KERNEL_OBJECT,
-            SE_WINDOW_OBJECT,
-            SE_DS_OBJECT,
-            SE_DS_OBJECT_ALL,
-            SE_PROVIDER_DEFINED_OBJECT,
-            SE_WMIGUID_OBJECT,
-            SE_REGISTRY_WOW64_32KEY
-        }
-
-        public const uint DACL_SECURITY_INFORMATION = 0x00000004;
-
-        [Flags]
-        public enum SECURITY_INFORMATION : uint
-        {
-            OWNER_SECURITY_INFORMATION = 0x00000001,
-            GROUP_SECURITY_INFORMATION = 0x00000002,
-            DACL_SECURITY_INFORMATION = 0x00000004,
-            SACL_SECURITY_INFORMATION = 0x00000008,
-            LABEL_SECURITY_INFORMATION = 0x00000010,
-            ATTRIBUTE_SECURITY_INFORMATION = 0x00000020,
-            SCOPE_SECURITY_INFORMATION = 0x00000040,
-            PROCESS_TRUST_LABEL_SECURITY_INFORMATION = 0x00000080,
-            BACKUP_SECURITY_INFORMATION = 0x00010000,
-            UNPROTECTED_SACL_SECURITY_INFORMATION = 0x10000000,
-            UNPROTECTED_DACL_SECURITY_INFORMATION = 0x20000000,
-            PROTECTED_SACL_SECURITY_INFORMATION = 0x40000000
-        }
-
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern uint SetNamedSecurityInfo(
-        string pObjectName,
-        SE_OBJECT_TYPE ObjectType,
-        SECURITY_INFORMATION SecurityInfo,
-        IntPtr psidOwner,
-        IntPtr psidGroup,
-        IntPtr pDacl,
-        IntPtr pSacl);
-
         //A set name for the Key that MSAL will create for SLC
-        private const string keyName = "MSALSLCKey29";
+        private const string keyName = "MSALSLCKey28";
 
         static void Main(string[] args)
         {
@@ -112,7 +55,7 @@ namespace CNGKey
                 var cert = CreateNewRsaKeyPair();
 
                 //ACLs on Key Container
-                SetAclsOnCspKeyContainer(cert);
+                //SetAclsOnCspKeyContainer(cert);
 
                 //Get the RSA Private Key
                 RSA key = cert.GetRSAPrivateKey();
@@ -127,27 +70,13 @@ namespace CNGKey
                     new CryptoKeyAccessRule(
                         new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
                         CryptoKeyRights.ReadData | CryptoKeyRights.GenericExecute | CryptoKeyRights.GenericRead,
-                        //CryptoKeyRights.FullControl | CryptoKeyRights.ReadData | CryptoKeyRights.GenericExecute | CryptoKeyRights.GenericRead,
                         AccessControlType.Allow));
 
                 sec.AddAccessRule(
                     new CryptoKeyAccessRule(
                         new SecurityIdentifier(WellKnownSidType.NetworkServiceSid, null),
                         CryptoKeyRights.ReadData | CryptoKeyRights.GenericExecute | CryptoKeyRights.GenericRead,
-                        //CryptoKeyRights.FullControl | CryptoKeyRights.ReadData | CryptoKeyRights.GenericExecute | CryptoKeyRights.GenericRead,
                         AccessControlType.Allow));
-
-                //sec.AddAccessRule(
-                //    new CryptoKeyAccessRule(
-                //        new SecurityIdentifier(WellKnownSidType.LocalSid, null),
-                //        CryptoKeyRights.FullControl | CryptoKeyRights.ReadData | CryptoKeyRights.GenericExecute | CryptoKeyRights.GenericRead,
-                //        AccessControlType.Allow));
-
-                //sec.AddAccessRule(
-                //    new CryptoKeyAccessRule(
-                //        new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
-                //        CryptoKeyRights.FullControl | CryptoKeyRights.ReadData | CryptoKeyRights.GenericExecute | CryptoKeyRights.GenericRead,
-                //        AccessControlType.Allow));
 
                 // Create CngKeyCreationParameters
                 var keyParams = new CngKeyCreationParameters
@@ -172,7 +101,7 @@ namespace CNGKey
 
                 //Print the key props 
                 PrintKeyProps(cngKey, "created");
-
+                Console.WriteLine("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
                 return cngKey.UniqueName;
             }
             catch (Exception ex)
@@ -182,8 +111,6 @@ namespace CNGKey
                 Console.WriteLine();
                 return ex.Message;
             }
-
-            Console.WriteLine("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         }
 
         private static void PrintKeyProps(CngKey key, string action)
@@ -231,58 +158,12 @@ namespace CNGKey
                 CngKeyOpenOptions options = CngKeyOpenOptions.MachineKey;
                 options |= CngKeyOpenOptions.Silent;
 
-                // Define the CNG key open options
-                //CngKeyOpenOptions options = new CngKeyOpenOptions();
-                //options |= CngKeyOpenOptions.MachineKey; // Use the bitwise OR operator
-
-                // Open the CNG key with the specified options
-                //CngKey openedKey = CngKey.Open(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider, options);
-
                 // Open the key with the specified options
                 using (CngKey openedKey = CngKey.Open(keyName, new CngProvider("Microsoft Software Key Storage Provider"), options))
                 {
                     Console.WriteLine("Key opened successfully: " + openedKey.KeyName);
                     PrintKeyProps(openedKey, "opened");
                 }
-
-                // Open a handle to the provider
-                //IntPtr providerHandle = IntPtr.Zero;
-                //int result = NCryptOpenStorageProvider(out providerHandle, CngProvider.MicrosoftSoftwareKeyStorageProvider.ToString(), 0);
-
-                //if (result == 0)
-                //{
-                //    // Open a handle to the key
-                //    IntPtr keyHandle = IntPtr.Zero;
-                //    result = NCryptOpenKey(providerHandle, out keyHandle, keyName, 0, 0);
-
-                //    if (result == 0)
-                //    {
-                //        try
-                //        {
-                //            Console.WriteLine($"Opened Key Name : {keyName} ");
-                //        }
-                //        finally
-                //        {
-                //            // Always close the key handle when you are done using it
-                //            NCryptFreeObject(keyHandle);
-                //        }
-                //    }
-                //    else
-                //    {
-                //        Console.WriteLine($"Error Openeing Key with Name : {keyName} ");
-                //        throw new CryptographicException(result);
-                //    }
-
-                //    // Close the provider handle when you are done using it
-                //    NCryptFreeObject(providerHandle);
-                //}
-                //else
-                //{
-                //    Console.WriteLine($"Error Openeing Key with Name : {keyName} ");
-                //    throw new CryptographicException(result);
-                //}
-
-
             }
             catch (CryptographicException ex)
             {
@@ -330,6 +211,10 @@ namespace CNGKey
             }
         }
 
+        /// <summary>
+        /// Need to set ACL on storage path for reading the key
+        /// </summary>
+        /// <param name="keyName"></param>
         static void SetAclOnKeyStoragePath(string keyName)
         {
             // Get the current security descriptor for the key
