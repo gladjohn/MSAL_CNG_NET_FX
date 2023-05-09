@@ -112,7 +112,7 @@ namespace CNGKey
                 var cert = CreateNewRsaKeyPair();
 
                 //ACLs on Key Container
-                //SetAclsOnCspKeyContainer(cert);
+                SetAclsOnCspKeyContainer(cert);
 
                 //Get the RSA Private Key
                 RSA key = cert.GetRSAPrivateKey();
